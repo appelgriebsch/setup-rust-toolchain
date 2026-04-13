@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-04-13
+
+* Add new parameter `cache-save-if` that is propagated to `Swatinem/rust-cache` as `save-if` (#90 by @ChanTsune)
+
 ## [1.15.4] - 2026-03-15
 
 * Bump Swatinem/rust-cache from 2.8.2 to 2.9.1 (#87 by @hyperfinitism)
