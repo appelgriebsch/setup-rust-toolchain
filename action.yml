@@ -57,6 +57,10 @@ inputs:
     description: "Determines which crates are cached. If `true` all crates will be cached, otherwise only dependent crates will be cached."
     required: false
     default: "false"
+  cache-save-if:
+    description: "Determines whether the cache should be saved. If `false`, the cache is only restored."
+    required: false
+    default: "true"
   matcher:
     description: "Enable the Rust problem matcher"
     required: false
@@ -248,5 +252,6 @@ runs:
         cache-provider: ${{inputs.cache-provider}}
         cache-all-crates: ${{inputs.cache-all-crates}}
         cache-workspace-crates: ${{inputs.cache-workspace-crates}}
+        save-if: ${{inputs.cache-save-if}}
         key: ${{inputs.cache-key}}
         shared-key: ${{inputs.cache-shared-key}}
