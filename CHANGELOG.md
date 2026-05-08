@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-05-08
+
+* Renamed internally used variable to avoid clashes with globally existing variables.
+  This fixes the interference of the TOOLCHAIN variable as reported in #91.
+
 ## [1.16.0] - 2026-04-13
 
 * Add new parameter `cache-save-if` that is propagated to `Swatinem/rust-cache` as `save-if` (#90 by @ChanTsune)

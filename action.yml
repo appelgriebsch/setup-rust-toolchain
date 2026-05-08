@@ -91,6 +91,10 @@ outputs:
     description: A short hash of the rustc version, appropriate for use as a cache key. "20220627a831"
     value: ${{steps.versions.outputs.cachekey}}
 
+# All local variables are using the `_srt_` prefix (for setup-rust-toolchain)
+# this is to avoid conflicts with globally existing variables, as some names are quite generic (e.g., toolchain)
+# This has caused issues in the past.
+# https://github.com/actions-rust-lang/setup-rust-toolchain/issues/91
 runs:
   using: composite
   steps:
@@ -103,19 +107,19 @@ runs:
 
     - id: flags
       env:
-        targets: ${{inputs.target}}
-        components: ${{inputs.components}}
+        _srt_targets: ${{inputs.target}}
+        _srt_components: ${{inputs.components}}
       shell: bash
       run: |
         : construct rustup command line
-        echo "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT
-        echo "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT
+        echo "targets=$(for t in ${_srt_targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT
+        echo "components=$(for c in ${_srt_components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT
         echo "downgrade=${{contains(inputs.toolchain, 'nightly') && inputs.components && ' --allow-downgrade' || ''}}" >> $GITHUB_OUTPUT
 
     # The environment variables always need to be set before the caching action
     - name: Setting Environment Variables
       env:
-        NEW_RUSTFLAGS: ${{inputs.rustflags}}
+        _srt_NEW_RUSTFLAGS: ${{inputs.rustflags}}
       shell: bash
       run: |
         if [[ ! -v CARGO_INCREMENTAL ]]; then
@@ -130,8 +134,8 @@ runs:
         if [[ ! -v RUST_BACKTRACE ]]; then
           echo "RUST_BACKTRACE=short" >> $GITHUB_ENV
         fi
-        if [[ ( ! -v RUSTFLAGS ) && $NEW_RUSTFLAGS != "" ]]; then
-          echo "RUSTFLAGS=$NEW_RUSTFLAGS" >> $GITHUB_ENV
+        if [[ ( ! -v RUSTFLAGS ) && $_srt_NEW_RUSTFLAGS != "" ]]; then
+          echo "RUSTFLAGS=$_srt_NEW_RUSTFLAGS" >> $GITHUB_ENV
         fi
         # Enable faster sparse index on nightly
         # The value is ignored on stable and causes no problems
@@ -166,49 +170,49 @@ runs:
 
     - name: rustup toolchain install ${{inputs.toolchain || 'stable'}}
       env:
-        toolchain: ${{inputs.toolchain}}
-        targets: ${{inputs.target}}
-        components: ${{inputs.components}}
-        override: ${{inputs.override}}
-        rust_src_dir: ${{inputs.rust-src-dir}}
+        _srt_toolchain: ${{inputs.toolchain}}
+        _srt_targets: ${{inputs.target}}
+        _srt_components: ${{inputs.components}}
+        _srt_override: ${{inputs.override}}
+        _srt_rust_src_dir: ${{inputs.rust-src-dir}}
       shell: bash
       run: |
         # Check if value is set
-        if [[ -n "$rust_src_dir" ]]
+        if [[ -n "$_srt_rust_src_dir" ]]
         then
           # If value is set the directory must exist
-          if [[ -d "$rust_src_dir" ]]
+          if [[ -d "$_srt_rust_src_dir" ]]
           then
-            cd "$rust_src_dir"
+            cd "$_srt_rust_src_dir"
           else
             echo "'rust-src-dir' does not point to an existing directory" >&2
-            echo "The value of 'rust-src-dir' is: ${rust_src_dir}" >&2
+            echo "The value of 'rust-src-dir' is: ${_srt_rust_src_dir}" >&2
             exit 1
           fi
         fi
-        if [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
+        if [[ -z "$_srt_toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
         then
           # Install the toolchain as specified in the file
           # rustup show is the old way that implicitly installed a toolchain
           # rustup toolchain install is the new explicit way
           # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297
           rustup show active-toolchain || rustup toolchain install
-          if [[ -n $components ]]; then
-            rustup component add ${components//,/ }
+          if [[ -n $_srt_components ]]; then
+            rustup component add ${_srt_components//,/ }
           fi
-          if [[ -n $targets ]]; then
-            rustup target add ${targets//,/ }
+          if [[ -n $_srt_targets ]]; then
+            rustup target add ${_srt_targets//,/ }
           fi
         else
-          if [[ -z "$toolchain" ]]
+          if [[ -z "$_srt_toolchain" ]]
           then
-            toolchain=stable
+            _srt_toolchain=stable
           fi
-          rustup toolchain install ${toolchain//,/ } ${{steps.flags.outputs.targets}}${{steps.flags.outputs.components}} --profile minimal${{steps.flags.outputs.downgrade}} --no-self-update
+          rustup toolchain install ${_srt_toolchain//,/ } ${{steps.flags.outputs.targets}}${{steps.flags.outputs.components}} --profile minimal${{steps.flags.outputs.downgrade}} --no-self-update
           # Take the last element from the list
-          if [[ "$override" == "true" ]]
+          if [[ "$_srt_override" == "true" ]]
           then
-            rustup override set ${toolchain//*,/ }
+            rustup override set ${_srt_toolchain//*,/ }
           fi
         fi
 
@@ -225,9 +229,9 @@ runs:
         echo "rustup-version=$(rustup --version)" >> $GITHUB_OUTPUT
         rustup --version
 
-        DATE=$(rustc --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
-        HASH=$(rustc --version --verbose | sed -ne 's/^commit-hash: //p')
-        echo "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT
+        _srt_DATE=$(rustc --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
+        _srt_HASH=$(rustc --version --verbose | sed -ne 's/^commit-hash: //p')
+        echo "cachekey=$(echo $_srt_DATE$_srt_HASH | head -c12)" >> $GITHUB_OUTPUT
 
     - name: Downgrade registry access protocol when needed
       shell: bash
